@@ -1,9 +1,23 @@
+import { db } from '../db';
+import { spendingEntriesTable } from '../db/schema';
 import { type SpendingEntry } from '../schema';
+import { desc } from 'drizzle-orm';
 
-export async function getSpendingEntries(): Promise<SpendingEntry[]> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is fetching all spending entries from the database.
-    // It should retrieve all entries ordered by date (most recent first) and
-    // return them as an array of SpendingEntry objects.
-    return [];
-}
+export const getSpendingEntries = async (): Promise<SpendingEntry[]> => {
+  try {
+    // Query spending entries ordered by date (most recent first)
+    const results = await db.select()
+      .from(spendingEntriesTable)
+      .orderBy(desc(spendingEntriesTable.date))
+      .execute();
+
+    // Convert numeric fields back to numbers before returning
+    return results.map(entry => ({
+      ...entry,
+      amount: parseFloat(entry.amount) // Convert string back to number
+    }));
+  } catch (error) {
+    console.error('Failed to fetch spending entries:', error);
+    throw error;
+  }
+};
