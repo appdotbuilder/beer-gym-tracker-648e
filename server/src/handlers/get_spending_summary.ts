@@ -8,7 +8,7 @@ export const getSpendingSummary = async (): Promise<SpendingSummary> => {
     // Query to get category totals and counts in a single query
     const summaryResults = await db.select({
       category: spendingEntriesTable.category,
-      total: sql<string>`sum(${spendingEntriesTable.amount})`.as('total'),
+      total: sql<string>`COALESCE(sum(${spendingEntriesTable.amount}), 0)`.as('total'),
       count: sql<string>`count(*)`.as('count')
     })
     .from(spendingEntriesTable)
@@ -22,6 +22,18 @@ export const getSpendingSummary = async (): Promise<SpendingSummary> => {
     let gym_count = 0;
 
     // Process results - convert numeric strings to numbers
+    // Handle case when there are no entries at all
+    if (summaryResults.length === 0) {
+      // Return default values when no entries exist
+      return {
+        beer_total: 0,
+        gym_total: 0,
+        beer_count: 0,
+        gym_count: 0,
+        user_type: 'balanced'
+      };
+    }
+
     summaryResults.forEach(result => {
       const total = parseFloat(result.total || '0');
       const count = parseInt(result.count || '0', 10);

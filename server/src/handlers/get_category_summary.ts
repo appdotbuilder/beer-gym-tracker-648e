@@ -14,11 +14,21 @@ export async function getCategorySummary(category: Category): Promise<CategorySu
     .where(eq(spendingEntriesTable.category, category))
     .execute();
 
+    // Handle case when no results are found
+    if (!result || result.length === 0) {
+      return {
+        category,
+        total: 0,
+        count: 0
+      };
+    }
+
     // Extract the aggregated data
     const aggregateData = result[0];
     
     // Convert numeric total to number (sum returns string for numeric columns)
-    const total = aggregateData.total ? parseFloat(aggregateData.total) : 0;
+    // Handle null values from SQL aggregation functions
+    const total = aggregateData.total ? parseFloat(aggregateData.total.toString()) : 0;
     const entryCount = aggregateData.count || 0;
 
     return {

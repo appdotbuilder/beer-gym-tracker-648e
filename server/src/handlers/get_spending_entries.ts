@@ -11,6 +11,11 @@ export const getSpendingEntries = async (): Promise<SpendingEntry[]> => {
       .orderBy(desc(spendingEntriesTable.date))
       .execute();
 
+    // Handle empty results
+    if (!results || results.length === 0) {
+      return [];
+    }
+
     // Convert numeric fields back to numbers before returning
     return results.map(entry => ({
       ...entry,

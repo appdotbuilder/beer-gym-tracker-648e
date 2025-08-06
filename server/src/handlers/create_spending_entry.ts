@@ -4,6 +4,15 @@ import { type CreateSpendingEntryInput, type SpendingEntry } from '../schema';
 
 export const createSpendingEntry = async (input: CreateSpendingEntryInput): Promise<SpendingEntry> => {
   try {
+    // Validate input
+    if (!input.category || !input.amount || !input.date) {
+      throw new Error('Missing required fields: category, amount, and date are required');
+    }
+
+    if (input.amount <= 0) {
+      throw new Error('Amount must be greater than 0');
+    }
+
     // Insert spending entry record
     const result = await db.insert(spendingEntriesTable)
       .values({
@@ -14,6 +23,11 @@ export const createSpendingEntry = async (input: CreateSpendingEntryInput): Prom
       })
       .returning()
       .execute();
+
+    // Handle case where insert didn't return a result
+    if (!result || result.length === 0) {
+      throw new Error('Failed to create spending entry: No result returned');
+    }
 
     // Convert numeric fields back to numbers before returning
     const spendingEntry = result[0];

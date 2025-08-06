@@ -1,5 +1,4 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { trpc } from '@/utils/trpc';
 import { useState, useEffect, useCallback } from 'react';
 import { SpendingEntryCard } from '@/components/SpendingEntryCard';
@@ -15,14 +14,17 @@ function App() {
   const [summary, setSummary] = useState<SpendingSummary | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Load data functions with useCallback for useEffect dependencies
   const loadEntries = useCallback(async () => {
     try {
+      setError(null);
       const result = await trpc.getSpendingEntries.query();
       setEntries(result);
     } catch (error) {
       console.error('Failed to load entries:', error);
+      setError('Failed to load spending entries. Please check your connection and try again.');
     }
   }, []);
 
@@ -32,6 +34,7 @@ function App() {
       setSummary(result);
     } catch (error) {
       console.error('Failed to load summary:', error);
+      setError('Failed to load spending summary. Please check your connection and try again.');
     }
   }, []);
 
@@ -46,6 +49,7 @@ function App() {
   const handleSubmit = async (formData: CreateSpendingEntryInput) => {
     setIsSubmitting(true);
     try {
+      setError(null);
       const response = await trpc.createSpendingEntry.mutate(formData);
       // Update entries list with new entry
       setEntries((prev: SpendingEntry[]) => [response, ...prev]);
@@ -53,6 +57,7 @@ function App() {
       await loadSummary();
     } catch (error) {
       console.error('Failed to create entry:', error);
+      setError('Failed to create spending entry. Please check your input and try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -71,16 +76,16 @@ function App() {
           </p>
         </div>
 
-        {/* Stub Notice */}
-        <Alert className="mb-6 border-orange-200 bg-orange-50">
-          <AlertDescription className="text-orange-800">
-            ⚠️ <strong>Note:</strong> This app is currently using stub data from the backend. 
-            All entries and calculations are simulated until the server handlers are implemented.
-          </AlertDescription>
-        </Alert>
-
         {/* Summary Cards */}
-        {summary && <SpendingSummaryCards summary={summary} />}
+        <SpendingSummaryCards 
+          summary={summary || {
+            beer_total: 0,
+            gym_total: 0,
+            beer_count: 0,
+            gym_count: 0,
+            user_type: 'balanced'
+          }} 
+        />
 
         {/* Add Entry Form */}
         <SpendingEntryForm onSubmit={handleSubmit} isSubmitting={isSubmitting} />
@@ -96,7 +101,18 @@ function App() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
+            {error ? (
+              <div className="text-center py-8 text-red-500">
+                <div className="text-6xl mb-4">❌</div>
+                <p>{error}</p>
+                <button 
+                  onClick={() => window.location.reload()}
+                  className="mt-4 px-4 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200"
+                >
+                  Refresh Page
+                </button>
+              </div>
+            ) : isLoading ? (
               <div className="text-center py-8 text-gray-500">
                 Loading entries...
               </div>
